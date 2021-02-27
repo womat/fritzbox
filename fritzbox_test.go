@@ -1,15 +1,15 @@
 package fritzbox
 
 import (
-	"fmt"
+	"github.com/womat/tools"
 	"testing"
 	"time"
 )
 
 const (
 	host     = "fritz.box"
-	user     = "smarthome"
-	password = "7Wl6UW5TsOr5Ba6uMbOO"
+	user     = ""
+	password = ""
 )
 
 func TestConnect(t *testing.T) {
@@ -19,9 +19,7 @@ func TestConnect(t *testing.T) {
 		return
 	}
 
-	fmt.Printf("%s\n", fb)
-
-	if fmt.Sprintf("%s", fb) == "0000000000000000" {
+	if fb.String() == "0000000000000000" {
 		t.Errorf("invalid SID")
 		return
 	}
@@ -49,13 +47,11 @@ func TestDevices(t *testing.T) {
 		return
 	}
 
-	d, err := fb.Devices()
+	_, err := fb.Devices()
 	if err != nil {
 		t.Errorf("cann't get devicelist: %v", err)
 		return
 	}
-
-	fmt.Printf("%v\n", d)
 
 	if err := fb.Close(); err != nil {
 		t.Errorf("cann't disconnect to fritzbox: %v", err)
@@ -70,13 +66,11 @@ func TestWallbox(t *testing.T) {
 		return
 	}
 
-	d, err := fb.NewDevice("wallbox")
+	_, err := fb.NewDevice("wallbox")
 	if err != nil {
 		t.Errorf("cann't get device: %v", err)
 		return
 	}
-
-	fmt.Printf("%s\n", d)
 
 	if err := fb.Close(); err != nil {
 		t.Errorf("cann't disconnect to fritzbox: %v", err)
@@ -97,13 +91,11 @@ func TestWaermepumpe(t *testing.T) {
 		return
 	}
 
-	detail, err := d.Info()
+	_, err = d.Info()
 	if err != nil {
 		t.Errorf("cann't get device: %v", err)
 		return
 	}
-
-	fmt.Printf("%v\n", detail)
 
 	if err := fb.Close(); err != nil {
 		t.Errorf("cann't disconnect to fritzbox: %v", err)
@@ -159,5 +151,59 @@ func TestWaeschetrockner(t *testing.T) {
 	if err := fb.Close(); err != nil {
 		t.Errorf("cann't disconnect to fritzbox: %v", err)
 		return
+	}
+}
+
+func TestOnline(t *testing.T) {
+	fb := New()
+	if err := fb.Connect(host, user, password); err != nil {
+		t.Errorf("cann't connect to fritzbox: %v", err)
+		return
+	}
+
+	d, err := fb.NewDevice("wäschetrockner")
+	if err != nil {
+		t.Errorf("cann't get device: %v", err)
+		return
+	}
+
+	i, err := d.Present()
+	if err != nil {
+		t.Errorf("cann't get State: %v", err)
+		return
+	}
+
+	detail, err := d.Info()
+	if err != nil {
+		t.Errorf("cann't get device: %v", err)
+		return
+	}
+
+	if i != detail.Present {
+		t.Errorf("state1 and state2 aren't equal, t1: %v, t2: %v", i, detail.Present)
+	}
+
+	if err := fb.Close(); err != nil {
+		t.Errorf("cann't disconnect to fritzbox: %v", err)
+		return
+	}
+}
+
+func TestUTF16(t *testing.T) {
+	type pattern struct {
+		utf8  string
+		utf16 []byte
+	}
+
+	tests := []pattern{
+		{utf8: "abcde€", utf16: []byte{0x61, 0x00, 0x62, 0x00, 0x63, 0x00, 0x64, 0x00, 0x65, 0x00, 0xac, 0x20}},
+		{utf8: "abcde", utf16: []byte{0x61, 0x00, 0x62, 0x00, 0x63, 0x00, 0x64, 0x00, 0x65, 0x00}},
+		{utf8: "Äß}gg", utf16: []byte{0xc4, 0x00, 0xdf, 0x00, 0x7d, 0x00, 0x67, 0x00, 0x67, 0x00}},
+	}
+
+	for _, test := range tests {
+		if !tools.IsEqual(stringToUTF16(test.utf8), test.utf16) {
+			t.Errorf("expected %x, got: %x", test.utf16, stringToUTF16(test.utf8))
+		}
 	}
 }

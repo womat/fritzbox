@@ -1,3 +1,5 @@
+github.com/womat/tools v0.0.3 h1:x6RN8mQ/u0LJZh0KMURPOPy4nGe51lqXHNIVLRV2oIs=
+github.com/womat/tools v0.0.3/go.mod h1:5JuQHQzagb1WdNUeVT4f0bsd/FglbMN7ffzFI+z1YiY=
 golang.org/x/text v0.3.5 h1:i6eZZ+zk0SOf0xgBpEpPD18qWcJda6q1sxt3S0kzyUQ=
 golang.org/x/text v0.3.5/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
 golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=

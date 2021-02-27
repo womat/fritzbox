@@ -1,10 +1,10 @@
 package fritzbox
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // DeviceSession is the SessionInfo and DeviceInfos) of a Fritzbox AHA Devices
@@ -13,7 +13,7 @@ type DeviceSession struct {
 	name            string
 	ain             string
 	functionBitmask int
-	id              string
+	id              int
 	fwVersion       string
 	manufacturer    string
 	productName     string
@@ -23,15 +23,15 @@ type DeviceSession struct {
 type Device struct {
 	Name            string
 	Identifier      string
-	Id              string
+	Id              int
 	FunctionBitMask int
 	FWVersion       string
 	Manufacturer    string
 	ProductName     string
-	Present         bool
+	Present         int
 	OnOffDevice     struct {
 		State      int
-		Mode       string
+		Mode       int
 		Lock       int
 		DeviceLock int
 	}
@@ -43,25 +43,6 @@ type Device struct {
 	Temperature float64
 }
 
-var (
-	ErrDeviceNotFound            = errors.New("device not found")
-	ErrSwitchCommandNotSupported = errors.New("device doesn't support switch commands")
-	ErrInvalidSwitchState        = errors.New("invalid switch state")
-	ErrUnknownAnswer             = errors.New("unknown answer of url request")
-	ErrTemperatureNotSupported   = errors.New("device doesn't support temperature")
-)
-
-const (
-	On      = 1
-	Off     = 0
-	Auto    = "auto"
-	Manuel  = "manuell"
-	Online  = 1
-	Offline = 0
-	Lock    = 1
-	Unlock  = 0
-)
-
 const (
 	hanFunDevice      = 1
 	alarmSensor       = 1 << 4
@@ -72,9 +53,7 @@ const (
 	aVMDECTRepeater   = 1 << 10
 	microphone        = 1 << 11
 	hanFunUnit        = 1 << 13
-)
 
-const (
 	switchcmdURL        = "http://%s/webservices/homeautoswitch.lua?ain=%s&sid=%s&switchcmd=%s"
 	cmdSwitchOn         = "setswitchon"
 	cmdSwitchOff        = "setswitchoff"
@@ -161,7 +140,7 @@ func (d *DeviceSession) Temperature() (f float64, err error) {
 		return f, err
 	}
 
-	f, err = strconv.ParseFloat(string(file), 64)
+	f, err = strconv.ParseFloat(strings.TrimSpace(string(file)), 64)
 	return f / 10, err
 }
 
@@ -187,15 +166,17 @@ func (d *DeviceSession) ProductName() string {
 }
 
 // Online returns the online state (true, false) of a Fritzbox AHA Device
-func (d *DeviceSession) State() (int, error) {
+func (d *DeviceSession) Present() (int, error) {
 	file, err := getFile(d.ahaURL(cmdSwitchPresent))
 
 	switch {
 	case err != nil:
 		return Offline, err
-	case string(file) == "0":
+	case len(file) == 0:
+		return Offline, ErrUnknownAnswer
+	case string(file[0]) == "0":
 		return Offline, nil
-	case string(file) == "1":
+	case string(file[0]) == "1":
 		return Online, nil
 	}
 

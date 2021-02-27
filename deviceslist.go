@@ -3,8 +3,11 @@ package fritzbox
 import (
 	"encoding/xml"
 	"fmt"
+	"strconv"
 	"strings"
 )
+
+const getdevicelistinfosURL = "http://%s/webservices/homeautoswitch.lua?sid=%s&switchcmd=getdevicelistinfos"
 
 type xmlDeviceList struct {
 	XMLName xml.Name    `xml:"devicelist"`
@@ -47,10 +50,6 @@ type xmlTemperature struct {
 	Offset  float64  `xml:"offset"`
 }
 
-const (
-	getdevicelistinfosURL = "http://%s/webservices/homeautoswitch.lua?sid=%s&switchcmd=getdevicelistinfos"
-)
-
 // GetDeviceList send a "getdevicelistinfos" to the Fritzbox and store the device infos.
 // The return code contains the Number of recognized devices
 func (s *Session) Devices() ([]Device, error) {
@@ -68,24 +67,24 @@ func (s *Session) Devices() ([]Device, error) {
 		d := Device{
 			Name:            strings.ToLower(device.Name),
 			Identifier:      device.Identifier,
-			Id:              device.Id,
+			Id:              device.id(),
 			FunctionBitMask: device.FunctionBitmask,
 			FWVersion:       device.FwVersion,
 			Manufacturer:    device.Manufacturer,
 			ProductName:     device.ProductName,
-			Present:         device.Present == 1,
+			Present:         device.Present,
 			Temperature:     device.temperature() + device.Temperature.Offset/10.0,
 
 			OnOffDevice: struct {
 				State      int
-				Mode       string
+				Mode       int
 				Lock       int
 				DeviceLock int
 			}{
 				State:      device.switchState(),
 				Mode:       device.switchMode(),
 				Lock:       device.switchLock(),
-				DeviceLock: device.Switch.DeviceLock,
+				DeviceLock: device.switchDeviceLock(),
 			},
 			Powermeter: struct {
 				Power   float64
@@ -111,22 +110,58 @@ func (d *xmlDevice) temperature() float64 {
 }
 
 func (d *xmlDevice) switchState() int {
-	if (d.FunctionBitmask&switchingSocket) == switchingSocket && d.Switch.State == On {
-		return On
+	switch {
+	case (d.FunctionBitmask & switchingSocket) == 0:
+		return Invalid
+	case d.Switch.State == On, d.Switch.State == Off:
+		return d.Switch.State
 	}
-	return Off
+	return Invalid
 }
 
-func (d *xmlDevice) switchMode() string {
-	if (d.FunctionBitmask & switchingSocket) == 0 {
+func (d *xmlDevice) switchMode() int {
+	switch {
+	case (d.FunctionBitmask & switchingSocket) == 0:
+		return Invalid
+	case d.Switch.Mode == "Auto":
 		return Auto
+	case d.Switch.Mode == "Manuell":
+		return Manuel
 	}
-	return d.Switch.Mode
+	return Invalid
 }
 
 func (d *xmlDevice) switchLock() int {
-	if (d.FunctionBitmask & switchingSocket) == 0 {
-		return Unlock
+	return d.lock(d.Switch.Lock)
+}
+
+func (d *xmlDevice) switchDeviceLock() int {
+	return d.lock(d.Switch.DeviceLock)
+}
+
+func (d *xmlDevice) lock(l int) int {
+	switch {
+	case (d.FunctionBitmask & switchingSocket) == 0:
+		return Invalid
+	case l == Lock, l == Unlock:
+		return l
 	}
-	return d.Switch.Lock
+	return Invalid
+}
+
+func (d *xmlDevice) id() int {
+	i, err := strconv.Atoi(d.Id)
+	if err != nil {
+		return Invalid
+	}
+
+	return i
+}
+
+func (d *xmlDevice) present() int {
+	if d.Present == Online {
+		return Online
+	}
+
+	return Offline
 }

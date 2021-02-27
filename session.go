@@ -1,13 +1,15 @@
 package fritzbox
 
 import (
+	"bytes"
 	"crypto/md5"
+	"encoding/binary"
 	"encoding/xml"
-	"errors"
 	"fmt"
-	"golang.org/x/text/encoding/unicode"
 	"io"
 	"net/http"
+	"time"
+	"unicode/utf16"
 )
 
 const (
@@ -15,9 +17,9 @@ const (
 	loginURL         = "http://%s/login_sid.lua"
 	logoutURL        = "http://%s/login_sid.lua?logout=1&sid=%s"
 	loginResponseURL = "http://%s/login_sid.lua?user=%s&response=%s-%s"
-)
 
-var ErrLoginFailed = errors.New("login failed")
+	timeout = 2 * time.Second
+)
 
 type xmlSessionInfo struct {
 	XMLName   xml.Name `info:"Session"`
@@ -47,7 +49,7 @@ func login(host, username, password string) (string, error) {
 		return defaultSid, err
 	}
 
-	hash := fmt.Sprintf("%x", md5.Sum(convert2utf16(id+"-"+password)))
+	hash := fmt.Sprintf("%x", md5.Sum(stringToUTF16(id+"-"+password)))
 	url := fmt.Sprintf(loginResponseURL, host, username, id, hash)
 
 	var info xmlSessionInfo
@@ -79,7 +81,9 @@ func getXMLStructure(url string, xmlStructure interface{}) error {
 }
 
 func getFile(url string) (content []byte, err error) {
-	res, err := http.Get(url)
+	client := http.Client{Timeout: timeout}
+
+	res, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -89,19 +93,8 @@ func getFile(url string) (content []byte, err error) {
 	return io.ReadAll(res.Body)
 }
 
-func convert2utf16(s string) []byte {
-	var utf16data = make([]byte, len(s)*2)
-
-	for i := range s {
-		utf16data[i*2] = s[i]
-		utf16data[i*2+1] = 0
-	}
-
-	return utf16data
-}
-
-func utf8ToUTF16(s string) []byte {
-	decoder := unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewDecoder()
-	utf8, _ := decoder.String(s)
-	return []byte(utf8)
+func stringToUTF16(s string) []byte {
+	buf := new(bytes.Buffer)
+	_ = binary.Write(buf, binary.LittleEndian, utf16.Encode([]rune(s)))
+	return buf.Bytes()
 }
