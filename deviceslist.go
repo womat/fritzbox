@@ -52,19 +52,19 @@ type xmlTemperature struct {
 
 // GetDeviceList send a "getdevicelistinfos" to the Fritzbox and store the device infos.
 // The return code contains the Number of recognized devices
-func (c *Client) Devices() ([]DeviceInfo, error) {
+func (c *Client) Devices() ([]DeviceStatus, error) {
 	var xmlFile xmlDeviceList
 
 	url := fmt.Sprintf(getdevicelistinfosURL, c.host, c.sid)
 
 	if err := getXMLStructure(url, &xmlFile); err != nil {
-		return []DeviceInfo{}, err
+		return []DeviceStatus{}, err
 	}
 
-	devices := make([]DeviceInfo, 0, len(xmlFile.Device))
+	devices := make([]DeviceStatus, 0, len(xmlFile.Device))
 
 	for _, device := range xmlFile.Device {
-		d := DeviceInfo{
+		d := DeviceStatus{
 			Name:            strings.ToLower(device.Name),
 			Identifier:      device.Identifier,
 			Id:              device.id(),

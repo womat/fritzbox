@@ -19,8 +19,8 @@ type Device struct {
 	productName     string
 }
 
-// DeviceInfo is the DeviceInfo of a Fritzbox AHA Devices
-type DeviceInfo struct {
+// DeviceStatus is the DeviceStatus of a Fritzbox AHA Devices
+type DeviceStatus struct {
 	Name            string
 	Identifier      string
 	Id              int
@@ -67,7 +67,7 @@ const (
 	cmdSwitchPower      = "getswitchpower"
 )
 
-// New create a new Fritzbox DeviceInfo Client of an AHA DeviceInfo
+// New create a new Fritzbox DeviceStatus Client of an AHA DeviceStatus
 // Name kann der Gerätename (Name) oder die AIN sein, es wird nach beiden gesucht
 func (c *Client) NewDevice(name string) (*Device, error) {
 	device := &Device{client: c}
@@ -93,10 +93,10 @@ func (c *Client) NewDevice(name string) (*Device, error) {
 	return device, ErrDeviceNotFound
 }
 
-func (d *Device) Info() (DeviceInfo, error) {
+func (d *Device) Info() (DeviceStatus, error) {
 	devices, err := d.client.Devices()
 	if err != nil {
-		return DeviceInfo{}, err
+		return DeviceStatus{}, err
 	}
 
 	for _, x := range devices {
@@ -105,7 +105,7 @@ func (d *Device) Info() (DeviceInfo, error) {
 		}
 	}
 
-	return DeviceInfo{}, ErrDeviceNotFound
+	return DeviceStatus{}, ErrDeviceNotFound
 }
 
 // SwitchOn switches on a switch device
@@ -165,7 +165,7 @@ func (d *Device) ProductName() string {
 	return d.productName
 }
 
-// Online returns the online state (true, false) of a Fritzbox AHA DeviceInfo
+// Online returns the online state (true, false) of a Fritzbox AHA DeviceStatus
 func (d *Device) Present() (int, error) {
 	file, err := getFile(d.ahaURL(cmdSwitchPresent))
 
@@ -183,24 +183,24 @@ func (d *Device) Present() (int, error) {
 	return Offline, ErrUnknownAnswer
 }
 
-// Power returns the current power of a Fritzbox AHA DeviceInfo
+// Power returns the current power of a Fritzbox AHA DeviceStatus
 func (d *Device) Power() (p float64, err error) {
 	file, err := getFile(d.ahaURL(cmdSwitchPower))
 	if err != nil {
 		return p, err
 	}
 
-	p, err = strconv.ParseFloat(string(file), 64)
+	p, err = strconv.ParseFloat(strings.TrimSpace(string(file)), 64)
 	return p / 1000, err
 }
 
-// Power returns the total energy of a Fritzbox AHA DeviceInfo
+// Power returns the total energy of a Fritzbox AHA DeviceStatus
 func (d *Device) Energy() (e float64, err error) {
 	file, err := getFile(d.ahaURL(cmdSwitchEnergy))
 	if err != nil {
 		return e, err
 	}
-	return strconv.ParseFloat(string(file), 64)
+	return strconv.ParseFloat(strings.TrimSpace(string(file)), 64)
 }
 
 func (d *Device) ahaSwitchCmd(cmd string) (i int, err error) {
