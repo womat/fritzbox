@@ -22,7 +22,7 @@ const (
 )
 
 type xmlSessionInfo struct {
-	XMLName   xml.Name `info:"Session"`
+	XMLName   xml.Name `info:"Client"`
 	SID       string   `info:"SID"`
 	Challenge string   `info:"Challenge"`
 	Rights    xmlRight `info:"Rights"`

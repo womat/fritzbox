@@ -23,37 +23,37 @@ const (
 	Invalid = -1
 )
 
-// Session is the SessionInfo (SID and a list of all Devices) of Fritzbox AHA
-type Session struct {
+// Client is the SessionInfo (SID and a list of all Devices) of Fritzbox AHA
+type Client struct {
 	host     string
 	user     string
 	password string
 	sid      string
 }
 
-func New() *Session {
-	return &Session{}
+func New() *Client {
+	return &Client{}
 }
 
-func (s *Session) String() string {
-	return s.sid
+func (c *Client) String() string {
+	return c.sid
 }
 
-func (s *Session) Connect(host, user, password string) (err error) {
-	s.host = host
-	s.user = user
-	s.password = password
-	return s.ReConnect()
+func (c *Client) Connect(host, user, password string) (err error) {
+	c.host = host
+	c.user = user
+	c.password = password
+	return c.ReConnect()
 }
 
-func (s *Session) ReConnect() (err error) {
-	s.sid, err = login(s.host, s.user, s.password)
+func (c *Client) ReConnect() (err error) {
+	c.sid, err = login(c.host, c.user, c.password)
 	return
 }
 
 // Close send a logout request to the Fritzbox and delete the SID Token
-func (s *Session) Close() error {
-	err := logout(s.host, s.sid)
-	s.sid = defaultSid
+func (c *Client) Close() error {
+	err := logout(c.host, c.sid)
+	c.sid = defaultSid
 	return err
 }

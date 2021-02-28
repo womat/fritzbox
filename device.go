@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-// DeviceSession is the SessionInfo and DeviceInfos) of a Fritzbox AHA Devices
-type DeviceSession struct {
-	session         *Session
+// Device is the SessionInfo and DeviceInfos) of a Fritzbox AHA Devices
+type Device struct {
+	client          *Client
 	name            string
 	ain             string
 	functionBitmask int
@@ -19,8 +19,8 @@ type DeviceSession struct {
 	productName     string
 }
 
-// Device is the DeviceInfo of a Fritzbox AHA Devices
-type Device struct {
+// DeviceInfo is the DeviceInfo of a Fritzbox AHA Devices
+type DeviceInfo struct {
 	Name            string
 	Identifier      string
 	Id              int
@@ -67,12 +67,12 @@ const (
 	cmdSwitchPower      = "getswitchpower"
 )
 
-// New create a new Fritzbox Device Session of an AHA Device
+// New create a new Fritzbox DeviceInfo Client of an AHA DeviceInfo
 // Name kann der Gerätename (Name) oder die AIN sein, es wird nach beiden gesucht
-func (s *Session) NewDevice(name string) (*DeviceSession, error) {
-	device := &DeviceSession{session: s}
+func (c *Client) NewDevice(name string) (*Device, error) {
+	device := &Device{client: c}
 
-	devices, err := s.Devices()
+	devices, err := c.Devices()
 	if err != nil {
 		return device, err
 	}
@@ -93,10 +93,10 @@ func (s *Session) NewDevice(name string) (*DeviceSession, error) {
 	return device, ErrDeviceNotFound
 }
 
-func (d *DeviceSession) Info() (Device, error) {
-	devices, err := d.session.Devices()
+func (d *Device) Info() (DeviceInfo, error) {
+	devices, err := d.client.Devices()
 	if err != nil {
-		return Device{}, err
+		return DeviceInfo{}, err
 	}
 
 	for _, x := range devices {
@@ -105,32 +105,32 @@ func (d *DeviceSession) Info() (Device, error) {
 		}
 	}
 
-	return Device{}, ErrDeviceNotFound
+	return DeviceInfo{}, ErrDeviceNotFound
 }
 
 // SwitchOn switches on a switch device
-func (d *DeviceSession) SwitchOn() (int, error) {
+func (d *Device) SwitchOn() (int, error) {
 	return d.ahaSwitchCmd(cmdSwitchOn)
 }
 
 // SwitchOff switches off a switch device
-func (d *DeviceSession) SwitchOff() (int, error) {
+func (d *Device) SwitchOff() (int, error) {
 	return d.ahaSwitchCmd(cmdSwitchOff)
 }
 
 // SwitchToggle switches on/off a switch device; on if it it was off; off it is was on
-func (d *DeviceSession) SwitchToggle() (int, error) {
+func (d *Device) SwitchToggle() (int, error) {
 	return d.ahaSwitchCmd(cmdSwitchToggle)
 }
 
 // SwitchState returns the state of a switch device
 // "0" oder "1" (Steckdose aus oder an), "inval" if unkno unbekannt
-func (d *DeviceSession) SwitchState() (int, error) {
+func (d *Device) SwitchState() (int, error) {
 	return d.ahaSwitchCmd(cmdSwitchState)
 }
 
 // Temperature measures the temperature of a temperature device
-func (d *DeviceSession) Temperature() (f float64, err error) {
+func (d *Device) Temperature() (f float64, err error) {
 	if (d.functionBitmask & temperatureSensor) == 0 {
 		return f, ErrTemperatureNotSupported
 	}
@@ -145,28 +145,28 @@ func (d *DeviceSession) Temperature() (f float64, err error) {
 }
 
 // Name returns the name of the actor
-func (d *DeviceSession) String() string {
+func (d *Device) String() string {
 	return d.name
 }
 
-func (d *DeviceSession) Ain() string {
+func (d *Device) Ain() string {
 	return d.ain
 }
 
-func (d *DeviceSession) FWVersion() string {
+func (d *Device) FWVersion() string {
 	return d.fwVersion
 }
 
-func (d *DeviceSession) Manufacturer() string {
+func (d *Device) Manufacturer() string {
 	return d.manufacturer
 }
 
-func (d *DeviceSession) ProductName() string {
+func (d *Device) ProductName() string {
 	return d.productName
 }
 
-// Online returns the online state (true, false) of a Fritzbox AHA Device
-func (d *DeviceSession) Present() (int, error) {
+// Online returns the online state (true, false) of a Fritzbox AHA DeviceInfo
+func (d *Device) Present() (int, error) {
 	file, err := getFile(d.ahaURL(cmdSwitchPresent))
 
 	switch {
@@ -183,8 +183,8 @@ func (d *DeviceSession) Present() (int, error) {
 	return Offline, ErrUnknownAnswer
 }
 
-// Power returns the current power of a Fritzbox AHA Device
-func (d *DeviceSession) Power() (p float64, err error) {
+// Power returns the current power of a Fritzbox AHA DeviceInfo
+func (d *Device) Power() (p float64, err error) {
 	file, err := getFile(d.ahaURL(cmdSwitchPower))
 	if err != nil {
 		return p, err
@@ -194,8 +194,8 @@ func (d *DeviceSession) Power() (p float64, err error) {
 	return p / 1000, err
 }
 
-// Power returns the total energy of a Fritzbox AHA Device
-func (d *DeviceSession) Energy() (e float64, err error) {
+// Power returns the total energy of a Fritzbox AHA DeviceInfo
+func (d *Device) Energy() (e float64, err error) {
 	file, err := getFile(d.ahaURL(cmdSwitchEnergy))
 	if err != nil {
 		return e, err
@@ -203,7 +203,7 @@ func (d *DeviceSession) Energy() (e float64, err error) {
 	return strconv.ParseFloat(string(file), 64)
 }
 
-func (d *DeviceSession) ahaSwitchCmd(cmd string) (i int, err error) {
+func (d *Device) ahaSwitchCmd(cmd string) (i int, err error) {
 	if (d.functionBitmask & switchingSocket) == 0 {
 		return Off, ErrSwitchCommandNotSupported
 	}
@@ -228,6 +228,6 @@ func getSwitchState(url string) (int, error) {
 	return Off, ErrUnknownAnswer
 }
 
-func (d *DeviceSession) ahaURL(cmd string) string {
-	return fmt.Sprintf(switchcmdURL, d.session.host, url.QueryEscape(d.ain), d.session.sid, cmd)
+func (d *Device) ahaURL(cmd string) string {
+	return fmt.Sprintf(switchcmdURL, d.client.host, url.QueryEscape(d.ain), d.client.sid, cmd)
 }
