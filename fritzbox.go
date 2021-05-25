@@ -1,5 +1,6 @@
 package fritzbox
 
+// TODO: rename file to client.go
 import "errors"
 
 var (
@@ -31,6 +32,7 @@ type Client struct {
 	sid      string
 }
 
+// New returns a struct of a client
 func New() *Client {
 	return &Client{}
 }
@@ -39,6 +41,7 @@ func (c *Client) String() string {
 	return c.sid
 }
 
+// Connect makes a connection to Fritzbox and creates a SID Token
 func (c *Client) Connect(host, user, password string) (err error) {
 	c.host = host
 	c.user = user
@@ -46,6 +49,7 @@ func (c *Client) Connect(host, user, password string) (err error) {
 	return c.ReConnect()
 }
 
+// ReConnect creates a new SID Token
 func (c *Client) ReConnect() (err error) {
 	c.sid, err = login(c.host, c.user, c.password)
 	return

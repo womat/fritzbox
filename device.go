@@ -1,5 +1,7 @@
 package fritzbox
 
+// TODO: export the Client (Function or exported Variable), Client Function can accessed directly from Device and must not stored externally
+
 import (
 	"fmt"
 	"net/url"
@@ -67,7 +69,7 @@ const (
 	cmdSwitchPower      = "getswitchpower"
 )
 
-// New create a new Fritzbox DeviceStatus Client of an AHA DeviceStatus
+// NewDevice create a new Fritzbox DeviceStatus Client of an AHA Device
 // Name kann der Gerätename (Name) oder die AIN sein, es wird nach beiden gesucht
 func (c *Client) NewDevice(name string) (*Device, error) {
 	device := &Device{client: c}
@@ -93,6 +95,7 @@ func (c *Client) NewDevice(name string) (*Device, error) {
 	return device, ErrDeviceNotFound
 }
 
+// Info returns the device status of a Fritzbox AHA device
 func (d *Device) Info() (DeviceStatus, error) {
 	devices, err := d.client.Devices()
 	if err != nil {
@@ -124,7 +127,7 @@ func (d *Device) SwitchToggle() (int, error) {
 }
 
 // SwitchState returns the state of a switch device
-// "0" oder "1" (Steckdose aus oder an), "inval" if unkno unbekannt
+// "0" oder "1" (Steckdose aus oder an), "inval" if unknown
 func (d *Device) SwitchState() (int, error) {
 	return d.ahaSwitchCmd(cmdSwitchState)
 }
@@ -144,7 +147,7 @@ func (d *Device) Temperature() (f float64, err error) {
 	return f / 10, err
 }
 
-// Name returns the name of the actor
+// String returns the name of a Fritzbox AHA device
 func (d *Device) String() string {
 	return d.name
 }
@@ -165,7 +168,7 @@ func (d *Device) ProductName() string {
 	return d.productName
 }
 
-// Online returns the online state (true, false) of a Fritzbox AHA DeviceStatus
+// Present returns the online state (true, false) of a Fritzbox AHA device
 func (d *Device) Present() (int, error) {
 	file, err := getFile(d.ahaURL(cmdSwitchPresent))
 
@@ -194,7 +197,7 @@ func (d *Device) Power() (p float64, err error) {
 	return p / 1000, err
 }
 
-// Power returns the total energy of a Fritzbox AHA DeviceStatus
+// Energy returns the total energy of a Fritzbox AHA DeviceStatus
 func (d *Device) Energy() (e float64, err error) {
 	file, err := getFile(d.ahaURL(cmdSwitchEnergy))
 	if err != nil {

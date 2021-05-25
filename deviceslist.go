@@ -50,8 +50,9 @@ type xmlTemperature struct {
 	Offset  float64  `xml:"offset"`
 }
 
-// GetDeviceList send a "getdevicelistinfos" to the Fritzbox and store the device infos.
-// The return code contains the Number of recognized devices
+// TODO: save function Device in file client.go
+
+// Devices send a "getdevicelistinfos" to the Fritzbox and returns a slice of devices
 func (c *Client) Devices() ([]DeviceStatus, error) {
 	var xmlFile xmlDeviceList
 
