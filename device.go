@@ -1,7 +1,5 @@
 package fritzbox
 
-// TODO: export the Client (Function or exported Variable), Client Function can accessed directly from Device and must not stored externally
-
 import (
 	"fmt"
 	"net/url"
@@ -11,7 +9,7 @@ import (
 
 // Device is the SessionInfo and DeviceInfos) of a Fritzbox AHA Devices
 type Device struct {
-	client          *Client
+	Client          *Client
 	name            string
 	ain             string
 	functionBitmask int
@@ -72,7 +70,7 @@ const (
 // NewDevice create a new Fritzbox DeviceStatus Client of an AHA Device
 // Name kann der Gerätename (Name) oder die AIN sein, es wird nach beiden gesucht
 func (c *Client) NewDevice(name string) (*Device, error) {
-	device := &Device{client: c}
+	device := &Device{Client: c}
 
 	devices, err := c.Devices()
 	if err != nil {
@@ -97,7 +95,7 @@ func (c *Client) NewDevice(name string) (*Device, error) {
 
 // Info returns the device status of a Fritzbox AHA device
 func (d *Device) Info() (DeviceStatus, error) {
-	devices, err := d.client.Devices()
+	devices, err := d.Client.Devices()
 	if err != nil {
 		return DeviceStatus{}, err
 	}
@@ -232,5 +230,5 @@ func getSwitchState(url string) (int, error) {
 }
 
 func (d *Device) ahaURL(cmd string) string {
-	return fmt.Sprintf(switchcmdURL, d.client.host, url.QueryEscape(d.ain), d.client.sid, cmd)
+	return fmt.Sprintf(switchcmdURL, d.Client.host, url.QueryEscape(d.ain), d.Client.sid, cmd)
 }
